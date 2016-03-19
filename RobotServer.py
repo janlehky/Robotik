@@ -36,7 +36,7 @@ class clientThread(threading.Thread):
          
             #Receiving from client
             data = self.connection.recv(1024)
-            reply = 'OK...' + data
+            #reply = 'OK...' + data
             print(data)
             if not data: 
                 break
