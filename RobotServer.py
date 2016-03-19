@@ -13,7 +13,7 @@ print('Socket created')
 try:
     s.bind((HOST, PORT))
 except socket.error:
-    print('Bind failed. Error Code.')# : ' + str(msg[0]) + ' Message ' + msg[1])
+    print('Bind failed')
     sys.exit()
      
 print('Socket bind complete')
@@ -29,7 +29,6 @@ class clientThread(threading.Thread):
         self.connection = connection
     
     def run(self):
-        print('Client handler started')
         #conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
      
         #infinite loop so that function do not terminate and thread do not end.
@@ -37,9 +36,8 @@ class clientThread(threading.Thread):
          
             #Receiving from client
             data = self.connection.recv(1024)
+            reply = 'OK...' + data
             print(data)
-            reply = 'OK...' + str(data)
-            
             if not data: 
                 break
      
@@ -47,7 +45,6 @@ class clientThread(threading.Thread):
      
         #came out of loop
         conn.close()
-        print('Client handler stopping')
 
 #now keep talking with the client
 while 1:
