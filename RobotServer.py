@@ -12,8 +12,8 @@ print('Socket created')
 #Bind socket to local host and port
 try:
     s.bind((HOST, PORT))
-except socket.error , msg:
-    print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
+except socket.error:
+    print('Bind failed. Error Code.')# : ' + str(msg[0]) + ' Message ' + msg[1])
     sys.exit()
      
 print('Socket bind complete')
@@ -24,26 +24,30 @@ print('Socket now listening')
 
 class clientThread(threading.Thread):
     """Thread to accept commands from clients"""
-    def __init__(self, connection)
+    def __init__(self, connection):
         threading.Thread.__init__(self)
         self.connection = connection
     
     def run(self):
-        conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
+        print('Client handler started')
+        #conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
      
         #infinite loop so that function do not terminate and thread do not end.
         while True:
          
             #Receiving from client
-            data = conn.recv(1024)
-            reply = 'OK...' + data
+            data = self.connection.recv(1024)
+            print(data)
+            reply = 'OK...' + str(data)
+            
             if not data: 
                 break
      
-            conn.sendall(reply)
+            #conn.sendall(reply)
      
         #came out of loop
         conn.close()
+        print('Client handler stopping')
 
 #now keep talking with the client
 while 1:
@@ -53,5 +57,6 @@ while 1:
      
     #start new thread takes 1st argument as a function name to be run, second is the tuple of arguments to the function.
     connection_thread = clientThread(conn)
+    connection_thread.start()
  
 s.close()
