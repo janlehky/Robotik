@@ -1,17 +1,18 @@
 #code for server side of robot
+#code needs update for Python 3, it gets wrong data from socket
 import socket
 import sys
 import threading
-import robot
+from robot import Robot
 import RPi.GPIO as GPIO                    #Import GPIO library
 import time                                #Import time library
 GPIO.setmode(GPIO.BCM)                     #Set GPIO pin numbering 
  
 HOST = ''   # Symbolic name meaning all available interfaces
-PORT = 8888 # Arbitrary non-privileged port
+PORT = 8898 # Arbitrary non-privileged port
 
 front_distance = 50     #distance of object from front of robot
-drive_command = 0		#drive command defining in which direction robot will go
+drive_command = 0	#drive command defining in which direction robot will go
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print('Socket created')
@@ -41,6 +42,7 @@ class clientThread(threading.Thread):
     
     def run(self):
         #conn.send('Welcome to the server. Type something and hit enter\n') #send only takes string
+        global drive_command #define drive command as global
      
         #infinite loop so that function do not terminate and thread do not end.
         while True:  
@@ -51,24 +53,19 @@ class clientThread(threading.Thread):
             str_data = str(data)
             if str_data == 'Go Forward':
                 print('Driving forward.')
-                drive_command = 8
-				#robot.go_forward()
+                drive_command = 8	#robot.go_forward()
             elif str_data == 'Go Backward':
                 print("Driving backward.")
-                drive_command = 2
-				#robot.go_backward()
+                drive_command = 2	#robot.go_backward()
             elif str_data == 'Turn Left':
                 print("Driving left.")
-                drive_command = 4
-				#robot.turn_left()
+                drive_command = 4       #robot.turn_left()
             elif str_data == 'Turn Right':
                 print("Driving right.")
-                drive_command = 6
-				#robot.turn_right()
+                drive_command = 6	#robot.turn_right()
             elif str_data == 'Stop':
                 print('Robot stopped.')
-                drive_command = 5
-				#robot.stop_robot()
+                drive_command = 5	#robot.stop_robot()
             else:
                 print('Unknown command')
                 
@@ -82,7 +79,7 @@ class clientThread(threading.Thread):
 
 class distanceThread(threading.Thread):
     """Clas which will run in separate thread and check distance of object from front of robot"""
-    def __init__(self, connection):
+    def __init__(self):
         threading.Thread.__init__(self)
         self.TRIG = 20
         self.ECHO = 21
@@ -91,19 +88,20 @@ class distanceThread(threading.Thread):
         GPIO.setup(self.ECHO,GPIO.IN)                   #Set pin as GPIO in
         
     def run(self):
+        global front_distance #define distance as global
         while True:
-            GPIO.output(TRIG, False)                 #Set TRIG as LOW
+            GPIO.output(self.TRIG, False)                 #Set TRIG as LOW
             print('Waitng For Sensor To Settle')
-            time.sleep(2)                            #Delay of 2 seconds
+            time.sleep(3)                            #Delay of 2 seconds
 
             GPIO.output(self.TRIG, True)                  #Set TRIG as HIGH
             time.sleep(0.00001)                      #Delay of 0.00001 seconds
             GPIO.output(self.TRIG, False)                 #Set TRIG as LOW
 
-            while GPIO.input(ECHO)==0:               #Check whether the ECHO is LOW
+            while GPIO.input(self.ECHO)==0:               #Check whether the ECHO is LOW
                 pulse_start = time.time()              #Saves the last known time of LOW pulse
 
-            while GPIO.input(ECHO)==1:               #Check whether the ECHO is HIGH
+            while GPIO.input(self.ECHO)==1:               #Check whether the ECHO is HIGH
                 pulse_end = time.time()                #Saves the last known time of HIGH pulse 
 
             pulse_duration = pulse_end - pulse_start #Get pulse duration to a variable
@@ -119,33 +117,33 @@ class distanceThread(threading.Thread):
 
 class driverThread(threading.Thread):
 	def __init__(self):
-		threading.Thread.__init__(self)
-		self.old_drive_command = 0
+            threading.Thread.__init__(self)
+            self.old_drive_command = 0
 		
 	def run(self):
-		
-		while True:
-			if drive_command != self.old_drive_command:
-				self.drive_command = drive_command
-				if self.old_drive_command == 8:
-					robot.go_forward()
-				elif self.old_drive_command == 2:
-					robot.go_backward()
-				elif self.old_drive_command == 4:
-					robot.turn_left()
-				elif self.old_drive_command == 6:
-					robot.turn_right()
-				elif self.old_drive_command == 5:
-					robot.stop_robot()
-				else:
-					robot.stop_robot()
+            
+            while True:
+                time.sleep(2)   #driver thread update time
+                print('Drive command: ' + str(drive_command) + ' old ' + str(self.old_drive_command) + ' distance ' + str(front_distance))
+                if drive_command != self.old_drive_command:     #if driver gets new command it is executed, otherwise robot keep going
+                    self.old_drive_command = drive_command
+                    if self.old_drive_command == 8:
+                        robot.go_forward()
+                    elif self.old_drive_command == 2:
+                        robot.go_backward()
+                    elif self.old_drive_command == 4:
+                        robot.turn_left()
+                    elif self.old_drive_command == 6:
+                        robot.turn_right()
+                    elif self.old_drive_command == 5:
+                        robot.stop_robot()
+                    else:
+                        robot.stop_robot()
 			
-			if distance < 10:
-				robot.stop_robot()
-				print('Obstacle too close')
-			
-			time.sleep(0.5)
-			
+                if front_distance < 10:
+                    robot.stop_robot()
+                    self.old_drive_command = 5  #set stop command into memory so robot can be easily restarted
+                    print('Obstacle too close')			
 		
 print('Starting measurement thread')
 measurement = distanceThread()
