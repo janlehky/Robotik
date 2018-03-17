@@ -12,7 +12,7 @@ class Distance():
         GPIO.setup(self.TRIG, GPIO.OUT)  # Set pin as GPIO out
         GPIO.setup(self.ECHO, GPIO.IN)  # Set pin as GPIO in
 
-    def measure(self):
+    def measure(self, data):
         GPIO.output(self.TRIG, False)  # Set TRIG as LOW
         print('Waitng For Sensor To Settle')
         time.sleep(3)  # Delay of 2 seconds
@@ -33,4 +33,4 @@ class Distance():
         distance = round(distance, 2)  # Round to two decimal points
 
         front_distance = distance - 0.5
-        return front_distance
+        data.value = front_distance
