@@ -1,16 +1,12 @@
 from Distance import Distance
+from robot import Robot
 import multiprocessing
 import time
 
 d = Distance()
+robotik = Robot()
 
-
-# def f(data, name):
-#     time.sleep(2)
-#     data.value += 1
-
-
-x = multiprocessing.Value('d', 0.0)
+x = multiprocessing.Value('d', 100.0)
 
 p = multiprocessing.Process(target=d.measure, args=(x, ))
 p.start()
@@ -22,7 +18,14 @@ for i in range(10):
         p.start()
 
     print(x.value)
-    time.sleep(1)
+    if x.value >= 50:
+        robotik.go_forward()
+    elif x.value < 10:
+        robotik.go_backward()
+    elif (x.value >= 10) and (x.value < 50):
+        robotik.turn_left()
+
+    time.sleep(0.3)
 
 p.terminate()
 d.cleanup()
