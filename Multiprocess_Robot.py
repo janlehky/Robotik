@@ -12,7 +12,7 @@ p = multiprocessing.Process(target=d.measure, args=(x, ))
 p.start()
 
 try:
-    for i in range(10):
+    while True:
 
         if not p.is_alive():
             p = multiprocessing.Process(target=d.measure, args=(x, ))
