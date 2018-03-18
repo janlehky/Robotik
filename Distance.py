@@ -14,8 +14,8 @@ class Distance():
 
     def measure(self, data):
         GPIO.output(self.TRIG, False)  # Set TRIG as LOW
-        print('Waitng For Sensor To Settle')
-        time.sleep(3)  # Delay of 2 seconds
+        # print('Waitng For Sensor To Settle')
+        time.sleep(2)  # Delay of 2 seconds
 
         GPIO.output(self.TRIG, True)  # Set TRIG as HIGH
         time.sleep(0.00001)  # Delay of 0.00001 seconds
