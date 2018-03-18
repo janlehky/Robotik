@@ -31,9 +31,6 @@ try:
 except KeyboardInterrupt:
     print('Finishing')
 
-except:
-    print('Other error')
-
 finally:
     p.terminate()
     d.cleanup()
