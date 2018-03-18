@@ -34,3 +34,6 @@ class Distance():
 
         front_distance = distance - 0.5
         data.value = front_distance
+
+    def cleanup(self):
+        GPIO.cleanup()
