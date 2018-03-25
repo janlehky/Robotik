@@ -33,5 +33,6 @@ except KeyboardInterrupt:
 
 finally:
     p.terminate()
+    robotik.stop_robot()
     d.cleanup()
 

@@ -24,6 +24,12 @@ class ServoController:
         data =  chr(0xaa) + chr(0x0c) + chr(0x04) + chr(chan) + chr(poslo) + chr(poshi)
         self.sc.write(bytes(data,'latin-1'))
 
+    def setSpeed(self, chan, speed):
+        lsb = speed & 0x7f
+        msb = (speed >> 7) & 0x7f
+        cmd = chr(0x07) + chr(chan) + chr(lsb) + chr(msb)
+        self.sc.write(bytes(cmd, 'latin-1'))
+
     def getPosition(self, servo):
         chan  = servo and 0x7f
         data =  chr(0xaa) + chr(0x0c) + chr(0x10) + chr(chan)
