@@ -10,3 +10,6 @@ https://www.pololu.com/docs/0J40
 pip install opencv-contrib-python
 
 pip install opencv-python
+
+**Idea for line finding**
+https://github.com/naokishibuya/car-finding-lane-lines
