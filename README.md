@@ -13,3 +13,10 @@ pip install opencv-python
 
 **Idea for line finding**
 https://github.com/naokishibuya/car-finding-lane-lines
+
+**Image downloading tool**
+https://github.com/hardikvasa/google-images-download
+
+**Labeling tool**
+https://github.com/tzutalin/labelimg
+
