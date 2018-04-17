@@ -12,7 +12,7 @@ with tf.Session() as sess:
     tf.import_graph_def(graph_def, name='')
 
     # Read and preprocess an image.
-    img = cv.imread('example.jpg')
+    img = cv.imread('example2.jpg')
     rows = img.shape[0]
     cols = img.shape[1]
     inp = cv.resize(img, (300, 300))
