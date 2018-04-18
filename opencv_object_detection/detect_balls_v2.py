@@ -37,12 +37,26 @@ with tf.Session() as sess:
                 classId = int(out[3][0][i])
                 score = float(out[1][0][i])
                 bbox = [float(v) for v in out[2][0][i]]
-                if score > 0.3:
+                if score > 0.5:
                     x = bbox[1] * cols
                     y = bbox[0] * rows
                     right = bbox[3] * cols
                     bottom = bbox[2] * rows
-                    cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=2)
+                    cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
+
+                    if classId == 1:
+                        middle_point_X = x + (right - x)/2
+                        middle_point_Y = y + (bottom - y)/2
+                        # print center point of ball
+                        # print('Middle point: X:{}, Y{}'.format(middle_point_X, middle_point_Y))
+                        if middle_point_X < cols/2 and middle_point_Y < rows / 2:
+                            print('Upper Left')
+                        elif middle_point_X >= cols/2 and middle_point_Y < rows / 2:
+                            print('Upper Right')
+                        elif middle_point_X < cols/2 and middle_point_Y >= rows / 2:
+                            print('Lower Left')
+                        elif middle_point_X >= cols / 2 and middle_point_Y >= rows / 2:
+                                print('Lower Right')
 
             cv.imshow('frame', frame)
             if cv.waitKey(1) & 0xFF == ord('q'):
