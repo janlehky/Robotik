@@ -28,3 +28,14 @@ uv4l --driver raspicam --auto-video_nr --encoding mjpeg –-framerate 15 --width
 
 **On Client**
 cap = cv2.VideoCapture('http://192.168.2.200:8080/stream/video.mjpeg')
+
+**PCA9685 install**
+sudo pip install adafruit-pca9685
+
+**MQTT**
+
+Install Erlang and RabitMQ based on information at http://www.rabbitmq.com/download.html
+
+Enable RabitMQ admin interface plugin
+
+Enable RabitMQ mqtt plugin

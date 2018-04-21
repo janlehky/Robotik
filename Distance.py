@@ -2,12 +2,13 @@ import RPi.GPIO as GPIO                    #Import GPIO library
 import time                                #Import time library
 GPIO.setmode(GPIO.BCM)                     #Set GPIO pin numbering
 
+
 class Distance():
     """Clas which will run in separate thread and check distance of object from front of robot"""
 
-    def __init__(self):
-        self.TRIG = 20
-        self.ECHO = 21
+    def __init__(self, trig=20, echo=21):
+        self.TRIG = trig
+        self.ECHO = echo
 
         GPIO.setup(self.TRIG, GPIO.OUT)  # Set pin as GPIO out
         GPIO.setup(self.ECHO, GPIO.IN)  # Set pin as GPIO in

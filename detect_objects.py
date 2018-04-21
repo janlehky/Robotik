@@ -2,7 +2,7 @@ import tensorflow as tf
 import cv2 as cv
 
 # Read the graph.
-with tf.gfile.FastGFile('frozen_inference_graph.pb', 'rb') as f:
+with tf.gfile.FastGFile('models/frozen_inference_graph.pb', 'rb') as f:
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
 
@@ -45,18 +45,18 @@ with tf.Session() as sess:
                     cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
 
                     if classId == 1:
-                        middle_point_X = x + (right - x)/2
-                        middle_point_Y = y + (bottom - y)/2
+                        middle_point_X = x + (right - x) / 2
+                        middle_point_Y = y + (bottom - y) / 2
                         # print center point of ball
                         # print('Middle point: X:{}, Y{}'.format(middle_point_X, middle_point_Y))
-                        if middle_point_X < cols/2 and middle_point_Y < rows / 2:
+                        if middle_point_X < cols / 2 and middle_point_Y < rows / 2:
                             print('Upper Left')
-                        elif middle_point_X >= cols/2 and middle_point_Y < rows / 2:
+                        elif middle_point_X >= cols / 2 and middle_point_Y < rows / 2:
                             print('Upper Right')
-                        elif middle_point_X < cols/2 and middle_point_Y >= rows / 2:
+                        elif middle_point_X < cols / 2 and middle_point_Y >= rows / 2:
                             print('Lower Left')
                         elif middle_point_X >= cols / 2 and middle_point_Y >= rows / 2:
-                                print('Lower Right')
+                            print('Lower Right')
 
             cv.imshow('frame', frame)
             if cv.waitKey(1) & 0xFF == ord('q'):

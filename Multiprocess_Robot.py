@@ -1,10 +1,9 @@
 from Distance import Distance
-from robot import Robot
 import multiprocessing
 import time
+import Ad
 
-d = Distance()
-robotik = Robot()
+d = Distance(20, 21)
 
 x = multiprocessing.Value('d', 100.0)
 
