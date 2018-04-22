@@ -14,14 +14,18 @@ def on_connect(client, userdata, flags, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(msg.topic+" "+str(msg.payload))
+    text = str(msg.payload)
+    parts = text.split(':')
+    if 'x' in parts[0]:
+        print('X position: {}'.format(parts[1]))
+    elif 'y' in parts[0]:
+        print('Y position: {}'.format(parts[1]))
 
 
 client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 rabitmq_ip = '192.168.2.88'
-# rabitmq_ip = "iot.eclipse.org"
 client.username_pw_set('client', '1234')
 client.connect(rabitmq_ip, 1883, 60)
 print("Connected")
@@ -30,12 +34,5 @@ print("Connected")
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a
 # manual interface.
-# client.loop_forever()
-client.loop_start()
 
-user_auth = {'username': 'client', 'password': '1234'}
-
-publish.single("demo.key", "payload", auth=user_auth)
-time.sleep(50)
-
-client.loop_stop()
+client.loop_forever()
