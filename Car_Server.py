@@ -51,22 +51,21 @@ with tf.Session() as sess:
 
                     if classId == 1:
                         middle_point_X = x + (right - x)/2
+                        print('Mid point: {} center: {}'.format(middle_point_X, cols/2))
+                        if middle_point_X < (cols/2):
+                            offset = -1 * (1 - abs((middle_point_X - cols/2)/(cols/2)))
+                        elif middle_point_X > (cols/2):
+                            offset = abs((middle_point_X - cols) / (cols / 2))
+                        else:
+                            offset = 1
                         middle_point_Y = y + (bottom - y)/2
                         # Calculate offset of item center in percents actual point - center (half range) / center
-                        msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format((middle_point_X - cols/2)/(cols/2))},
-                                {'topic': 'demo.key', 'payload': 'y:{}'.format((middle_point_Y - rows/2)/(rows/2))}]
+                        msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format(offset)},
+                                {'topic': 'demo.key', 'payload': 'y:{}'.format(1-(middle_point_Y - rows/2)/(rows/2))}]
                         # print center point of ball
                         # print('Middle point: X:{}, Y{}'.format(middle_point_X, middle_point_Y))
                         print('Msgs: {}'.format(msgs))
                         publish.multiple(msgs, rabitmq_ip, auth=user_auth)
-                        # if middle_point_X < cols/2 and middle_point_Y < rows / 2:
-                        #     print('Upper Left')
-                        # elif middle_point_X >= cols/2 and middle_point_Y < rows / 2:
-                        #     print('Upper Right')
-                        # elif middle_point_X < cols/2 and middle_point_Y >= rows / 2:
-                        #     print('Lower Left')
-                        # elif middle_point_X >= cols / 2 and middle_point_Y >= rows / 2:
-                        #     print('Lower Right')
 
             cv.imshow('frame', frame)
             if cv.waitKey(1) & 0xFF == ord('q'):
