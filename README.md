@@ -23,6 +23,9 @@ https://github.com/tzutalin/labelimg
 **Install uv4l on Raspberry**
 https://www.linux-projects.org/uv4l/installation/
 
+**Prebuild tensorflow**
+https://github.com/lhelontra/tensorflow-on-arm/releases
+
 **Start video stream from Raspberry Pi**
 uv4l --driver raspicam --auto-video_nr --encoding mjpeg –-framerate 15 --width 640 --height 480 --enable-server on
 

@@ -81,40 +81,45 @@ def make_line_points(y1, y2, line):
     return ((x1, y1), (x2, y2))
 
 
-img = cv2.imread('img/street_1.jpg')
+cap = cv2.VideoCapture('Driving - 800.mp4')
 
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+while(cap.isOpened()):
+    ret, frame = cap.read()
 
-kernel_size = 9
-blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-edges = cv2.Canny(blurred, 50, 150)
+    kernel_size = 9
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
 
-area = select_region(edges)
+    edges = cv2.Canny(blurred, 50, 150)
 
-lines = cv2.HoughLinesP(area, rho=1, theta=np.pi/180, threshold=30, minLineLength=20, maxLineGap=200)
+    area = select_region(edges)
 
-left_lane, right_lane = average_slope_intercept(lines)
+    lines = cv2.HoughLinesP(area, rho=1, theta=np.pi/180, threshold=30, minLineLength=20, maxLineGap=200)
 
-y1 = img.shape[0]  # bottom of the image
-y2 = y1 * 0.6  # slightly lower than the middle
+    left_lane, right_lane = average_slope_intercept(lines)
 
-left_line = make_line_points(y1, y2, left_lane)
-right_line = make_line_points(y1, y2, right_lane)
+    y1 = gray.shape[0]  # bottom of the image
+    y2 = y1 * 0.6  # slightly lower than the middle
 
-print(left_line)
-print(right_line)
+    left_line = make_line_points(y1, y2, left_lane)
+    right_line = make_line_points(y1, y2, right_lane)
 
-lines = [left_line, right_line]
+    print(left_line)
+    print(right_line)
 
-try:
-    for line in lines:
-        X, Y = line
-        cv2.line(img, X, Y, (0, 255, 0), 2)
-except:
-    pass
+    lines = [left_line, right_line]
 
+    try:
+        for line in lines:
+            X, Y = line
+            cv2.line(frame, X, Y, (0, 255, 0), 2)
+    except:
+        pass
 
-cv2.imshow('image', img)
-cv2.waitKey(0)
+    cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
 cv2.destroyAllWindows()
