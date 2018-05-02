@@ -7,7 +7,7 @@ rabitmq_ip = '192.168.2.88'     # ip address of mqtt server
 user_auth = {'username': 'client', 'password': '1234'}  # Add user authentication for publish function
 
 # Read the graph.
-with tf.gfile.FastGFile('models/frozen_inference_graph.pb', 'rb') as f:
+with tf.gfile.FastGFile('models/frozen_inference_graph_tb.pb', 'rb') as f:
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
 
@@ -42,7 +42,7 @@ with tf.Session() as sess:
                 classId = int(out[3][0][i])
                 score = float(out[1][0][i])
                 bbox = [float(v) for v in out[2][0][i]]
-                if score > 0.5:
+                if score > 0.4:
                     x = bbox[1] * cols
                     y = bbox[0] * rows
                     right = bbox[3] * cols

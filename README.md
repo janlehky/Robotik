@@ -16,14 +16,18 @@ https://github.com/naokishibuya/car-finding-lane-lines
 
 **Image downloading tool**
 https://github.com/hardikvasa/google-images-download
+googleimagesdownload --keywords "tennis ball in grass" --limit 300 --size medium --chromedriver "D:\Projects\Robot\pictures\chromedriver.exe"
 
 **Labeling tool**
 https://github.com/tzutalin/labelimg
 
+**Generate tf record**
+python3 generate_record.py --csv_input=data/train_labels.csv --output_path=data/train.record
+
 **Install uv4l on Raspberry**
 https://www.linux-projects.org/uv4l/installation/
 
-**Prebuild tensorflow**
+**Prebuilt tensorflow**
 https://github.com/lhelontra/tensorflow-on-arm/releases
 
 **Start video stream from Raspberry Pi**
