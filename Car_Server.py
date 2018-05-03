@@ -38,34 +38,74 @@ with tf.Session() as sess:
 
             # Visualize detected bounding boxes.
             num_detections = int(out[0][0])
-            for i in range(num_detections):
-                classId = int(out[3][0][i])
-                score = float(out[1][0][i])
-                bbox = [float(v) for v in out[2][0][i]]
-                if score > 0.4:
-                    x = bbox[1] * cols
-                    y = bbox[0] * rows
-                    right = bbox[3] * cols
-                    bottom = bbox[2] * rows
-                    cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
 
-                    if classId == 1:
-                        middle_point_X = x + (right - x)/2
-                        print('Mid point: {} center: {}'.format(middle_point_X, cols/2))
-                        if middle_point_X < (cols/2):
-                            offset = -1 * (1 - abs((middle_point_X - cols/2)/(cols/2)))
-                        elif middle_point_X > (cols/2):
-                            offset = abs((middle_point_X - cols) / (cols / 2))
-                        else:
-                            offset = 1
-                        middle_point_Y = y + (bottom - y)/2
-                        # Calculate offset of item center in percents actual point - center (half range) / center
-                        msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format(offset)},
-                                {'topic': 'demo.key', 'payload': 'y:{}'.format(1-(middle_point_Y - rows/2)/(rows/2))}]
-                        # print center point of ball
-                        # print('Middle point: X:{}, Y{}'.format(middle_point_X, middle_point_Y))
-                        print('Msgs: {}'.format(msgs))
-                        publish.multiple(msgs, rabitmq_ip, auth=user_auth)
+            best_match_id = -1
+            best_match_prob = 0
+
+            for i in range(num_detections):
+                # classId = int(out[3][0][i])
+                score = float(out[1][0][i])
+                # bbox = [float(v) for v in out[2][0][i]]
+
+                if score > best_match_prob:
+                    best_match_id = i
+                    best_match_prob = score
+
+                # if score > 0.4:
+                #     x = bbox[1] * cols
+                #     y = bbox[0] * rows
+                #     right = bbox[3] * cols
+                #     bottom = bbox[2] * rows
+                #     cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
+                #
+                #     if classId == 1:
+                #         middle_point_X = x + (right - x)/2
+                #         print('Mid point: {} center: {}'.format(middle_point_X, cols/2))
+                #         if middle_point_X < (cols/2):
+                #             offset = -1 * (1 - abs((middle_point_X - cols/2)/(cols/2)))
+                #         elif middle_point_X > (cols/2):
+                #             offset = abs((middle_point_X - cols) / (cols / 2))
+                #         else:
+                #             offset = 1
+                #         middle_point_Y = y + (bottom - y)/2
+                #         # Calculate offset of item center in percents actual point - center (half range) / center
+                #         msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format(offset)},
+                #                 {'topic': 'demo.key', 'payload': 'y:{}'.format(1-(middle_point_Y - rows/2)/(rows/2))}]
+                #         # print center point of ball
+                #         # print('Middle point: X:{}, Y{}'.format(middle_point_X, middle_point_Y))
+                #         print('Msgs: {}'.format(msgs))
+                #         publish.multiple(msgs, rabitmq_ip, auth=user_auth)
+
+            if best_match_id > -1:
+                # if we find object in frame get its coordinates and send it to car
+                bbox = [float(v) for v in out[2][0][best_match_id]]
+                x = bbox[1] * cols
+                y = bbox[0] * rows
+                right = bbox[3] * cols
+                bottom = bbox[2] * rows
+
+                cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
+
+                middle_point_X = x + (right - x) / 2
+                print('Mid point: {} center: {}'.format(middle_point_X, cols / 2))
+                if middle_point_X < (cols / 2):
+                    offset = -1 * (1 - abs((middle_point_X - cols / 2) / (cols / 2)))
+                elif middle_point_X > (cols / 2):
+                    offset = abs((middle_point_X - cols) / (cols / 2))
+                else:
+                    offset = 1
+                middle_point_Y = y + (bottom - y) / 2
+                # Calculate offset of item center in percents actual point - center (half range) / center
+                msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format(offset)},
+                        {'topic': 'demo.key', 'payload': 'y:{}'.format(1 - (middle_point_Y - rows / 2) / (rows / 2))}]
+                print('Msgs: {}'.format(msgs))
+                publish.multiple(msgs, rabitmq_ip, auth=user_auth)
+            else:
+                # if we don't find and interesting object send -10, -10 to car
+                msgs = [{'topic': "demo.key", 'payload': 'x:{}'.format(-10)},
+                        {'topic': 'demo.key', 'payload': 'y:{}'.format(-10)}]
+                print('Msgs: {}'.format(msgs))
+                publish.multiple(msgs, rabitmq_ip, auth=user_auth)
 
             cv.imshow('frame', frame)
             if cv.waitKey(1) & 0xFF == ord('q'):

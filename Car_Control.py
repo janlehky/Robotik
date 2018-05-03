@@ -45,7 +45,10 @@ def drive_vehicle(x_offset, y_offset, front_distance_sensor):
             left_speed = 0
             right_speed = 0
         else:
-            if x_offset.value < 0:
+            if x_offset.value == -10:
+                left_speed = 0
+                right_speed = 0.3 * max_speed
+            elif -5 < x_offset.value < 0:
                 left_speed = abs(x_offset.value) * max_speed
                 right_speed = max_speed
             elif x_offset.value > 0:
@@ -91,7 +94,7 @@ client = mqtt.Client()
 client.on_connect = on_connect
 client.on_message = on_message
 rabitmq_ip = '192.168.2.88'
-client.username_pw_set('scapogo', '65536')
+client.username_pw_set('client', '1234')
 client.connect(rabitmq_ip, 1883, 60)
 
 # Create distance measurement process and start it
