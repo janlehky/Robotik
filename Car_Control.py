@@ -10,12 +10,13 @@ GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
 # define values for communication between processes
 x_offset = multiprocessing.Value('d', 0.0)
 y_offset = multiprocessing.Value('d', 0.0)
+run_cmd = multiprocessing.Value('d', 0.0)
 front_distance_sensor = multiprocessing.Value('d', 0.0)
 
 max_speed = 100     # Maximum speed of vehicle
 
 
-def drive_vehicle(x_offset, y_offset, front_distance_sensor):
+def drive_vehicle(x_offset, y_offset, run_cmd, front_distance_sensor):
     """Logic for controlling car movement"""
     # Initialise the PCA9685 using the default address (0x40).
     pwm = Adafruit_PCA9685.PCA9685()
@@ -40,7 +41,7 @@ def drive_vehicle(x_offset, y_offset, front_distance_sensor):
     GPIO.output(right_bwd_pin, False)
 
     while True:
-        print('X_offset: {}'.format(x_offset.value))
+        # print('X_offset: {}'.format(x_offset.value))
         if front_distance_sensor.value < 5:
             left_speed = 0
             right_speed = 0
@@ -61,12 +62,12 @@ def drive_vehicle(x_offset, y_offset, front_distance_sensor):
         print('Speeds: Left {} Right {}'.format(left_speed, right_speed))
 
         # Right drives
-        pwm.set_pwm(0, 0, int(right_speed))
-        pwm.set_pwm(1, 0, int(right_speed))
+        pwm.set_pwm(0, 0, int(right_speed*run_cmd.value))
+        pwm.set_pwm(1, 0, int(right_speed*run_cmd.value))
 
         # Left drives
-        pwm.set_pwm(4, 0, int(left_speed))
-        pwm.set_pwm(5, 0, int(left_speed))
+        pwm.set_pwm(4, 0, int(left_speed*run_cmd.value))
+        pwm.set_pwm(5, 0, int(left_speed*run_cmd.value))
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -81,13 +82,17 @@ def on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     text = str(msg.payload)
-    parts = text.split(':')
-    if 'x' in parts[0]:
-        print('X offset: {}'.format(parts[1]))
-        x_offset.value = float(parts[1][:-1])
-    elif 'y' in parts[0]:
-        print('Y offset: {}'.format(parts[1]))
-        y_offset.value = float(parts[1][:-1])
+    if 'go' in text:
+        parts = text.split(':')
+        run_cmd.value = 1.0
+        if 'x' in parts[0]:
+            print('X offset: {}'.format(parts[1]))
+            x_offset.value = float(parts[1][:-1])
+        elif 'y' in parts[0]:
+            print('Y offset: {}'.format(parts[1]))
+            y_offset.value = float(parts[1][:-1])
+    elif 'stop' in text:
+        run_cmd.value = 0.0
 
 
 client = mqtt.Client()
@@ -98,7 +103,8 @@ client.username_pw_set('client', '1234')
 client.connect(rabitmq_ip, 1883, 60)
 
 # Create distance measurement process and start it
-drive_process = multiprocessing.Process(target=drive_vehicle, args=(x_offset, y_offset, front_distance_sensor, ))
+drive_process = multiprocessing.Process(target=drive_vehicle,
+                                        args=(x_offset, y_offset, run_cmd, front_distance_sensor, ))
 drive_process.start()
 
 # Create measurement object for front sensor
