@@ -11,7 +11,7 @@ GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
 x_offset = multiprocessing.Value('d', 0.0)
 y_offset = multiprocessing.Value('d', 0.0)
 run_cmd = multiprocessing.Value('d', 0.0)
-front_distance_sensor = multiprocessing.Value('d', 0.0)
+front_distance_sensor = multiprocessing.Value('d', 10.0)
 
 max_speed = 100     # Maximum speed of vehicle
 
@@ -22,23 +22,23 @@ def drive_vehicle(x_offset, y_offset, run_cmd, front_distance_sensor):
     pwm = Adafruit_PCA9685.PCA9685()
 
     # set number of pins for direction of drives
-    left_fwd_pin = 4
-    left_bwd_pin = 17
+    left_fwd_pin_1 = 4
+    left_fwd_pin_2 = 17
 
-    right_fwd_pin = 22
-    right_bwd_pin = 27
+    right_fwd_pin_1 = 22
+    right_fwd_pin_2 = 27
 
-    GPIO.setup(left_fwd_pin, GPIO.OUT)  # left forward pin
-    GPIO.setup(left_bwd_pin, GPIO.OUT)  # left backward pin
+    GPIO.setup(left_fwd_pin_1, GPIO.OUT)  # left forward pin
+    GPIO.setup(left_fwd_pin_2, GPIO.OUT)  # left backward pin
 
-    GPIO.setup(right_fwd_pin, GPIO.OUT)  # right forward pin
-    GPIO.setup(right_bwd_pin, GPIO.OUT)  # right backward pin
+    GPIO.setup(right_fwd_pin_1, GPIO.OUT)  # right forward pin
+    GPIO.setup(right_fwd_pin_2, GPIO.OUT)  # right backward pin
 
-    GPIO.output(right_fwd_pin, True)
-    GPIO.output(right_bwd_pin, False)
+    GPIO.output(left_fwd_pin_1, True)
+    GPIO.output(left_fwd_pin_2, True)
 
-    GPIO.output(right_fwd_pin, True)
-    GPIO.output(right_bwd_pin, False)
+    GPIO.output(right_fwd_pin_1, True)
+    GPIO.output(right_fwd_pin_2, True)
 
     while True:
         # print('X_offset: {}'.format(x_offset.value))
@@ -109,10 +109,10 @@ drive_process = multiprocessing.Process(target=drive_vehicle,
 drive_process.start()
 
 # Create measurement object for front sensor
-front_measurement = Distance(20, 21)
+#front_measurement = Distance(20, 21)
 # Create front measurement process and start it
-front_measurement_process = multiprocessing.Process(target=front_measurement.measure, args=(front_distance_sensor, ))
-front_measurement_process.start()
+#front_measurement_process = multiprocessing.Process(target=front_measurement.measure, args=(front_distance_sensor, ))
+#front_measurement_process.start()
 
 try:
     client.loop_forever()
