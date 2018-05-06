@@ -57,6 +57,7 @@ with tf.Session() as sess:
                 y = bbox[0] * rows
                 right = bbox[3] * cols
                 bottom = bbox[2] * rows
+                object_width = abs(x - right)
 
                 cv.rectangle(frame, (int(x), int(y)), (int(right), int(bottom)), (125, 255, 51), thickness=3)
 
@@ -70,15 +71,16 @@ with tf.Session() as sess:
                     offset = 1
                 middle_point_Y = y + (bottom - y) / 2
                 # Calculate offset of item center in percents actual point - center (half range) / center
-                msgs = [{'topic': "demo.key", 'payload': 'go x:{}'.format(offset)}]
+                msgs = [{'topic': "demo.key", 'payload': 'go;x:{};width:{}'.format(offset, object_width)}]
                 # , {'topic': 'demo.key', 'payload': 'y:{}'.format(1 - (middle_point_Y - rows / 2) / (rows / 2))}]
                 print('Msgs: {}'.format(msgs))
                 publish.multiple(msgs, rabitmq_ip, auth=user_auth)
             else:
                 # if we don't find and interesting object send -10, -10 to car
-                msgs = [{'topic': "demo.key", 'payload': 'go x:{}'.format(-10)}]
+                msgs = [{'topic': "demo.key", 'payload': 'go;x:{};width:{}'.format(-10, 0)}]
                 # , {'topic': 'demo.key', 'payload': 'y:{}'.format(-10)}]
                 print('Msgs: {}'.format(msgs))
+                publish.single(payload=msgs, hostname=rabitmq_ip)
                 publish.multiple(msgs, rabitmq_ip, auth=user_auth)
 
             cv.imshow('frame', frame)

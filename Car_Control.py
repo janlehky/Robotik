@@ -22,11 +22,11 @@ def drive_vehicle(x_offset, y_offset, run_cmd, front_distance_sensor):
     pwm = Adafruit_PCA9685.PCA9685()
 
     # set number of pins for direction of drives
-    left_fwd_pin = 11
-    left_bwd_pin = 12
+    left_fwd_pin = 4
+    left_bwd_pin = 17
 
-    right_fwd_pin = 13
-    right_bwd_pin = 14
+    right_fwd_pin = 22
+    right_bwd_pin = 27
 
     GPIO.setup(left_fwd_pin, GPIO.OUT)  # left forward pin
     GPIO.setup(left_bwd_pin, GPIO.OUT)  # left backward pin
@@ -82,8 +82,9 @@ def on_connect(client, userdata, flags, rc):
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
     text = str(msg.payload)
-    if 'go' in text:
-        parts = text.split(':')
+    data = text.split(";")
+    if 'go' in data[0]:
+        parts = data[1].split(':')
         run_cmd.value = 1.0
         if 'x' in parts[0]:
             print('X offset: {}'.format(parts[1]))
@@ -91,7 +92,7 @@ def on_message(client, userdata, msg):
         elif 'y' in parts[0]:
             print('Y offset: {}'.format(parts[1]))
             y_offset.value = float(parts[1][:-1])
-    elif 'stop' in text:
+    elif 'stop' in data[0]:
         run_cmd.value = 0.0
 
 
