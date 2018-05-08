@@ -70,18 +70,16 @@ with tf.Session() as sess:
                 else:
                     offset = 1
                 middle_point_Y = y + (bottom - y) / 2
+
                 # Calculate offset of item center in percents actual point - center (half range) / center
-                msgs = [{'topic': "demo.key", 'payload': 'go;x:{};width:{}'.format(offset, object_width)}]
-                # , {'topic': 'demo.key', 'payload': 'y:{}'.format(1 - (middle_point_Y - rows / 2) / (rows / 2))}]
-                print('Msgs: {}'.format(msgs))
-                publish.multiple(msgs, rabitmq_ip, auth=user_auth)
+                msg = "go;x:{};width:{}".format(offset, object_width)
+                print('Msgs: {}'.format(msg))
+                publish.single(payload=msg, hostname=rabitmq_ip, topic="demo.key", auth=user_auth)
             else:
                 # if we don't find and interesting object send -10, -10 to car
-                msgs = [{'topic': "demo.key", 'payload': 'go;x:{};width:{}'.format(-10, 0)}]
-                # , {'topic': 'demo.key', 'payload': 'y:{}'.format(-10)}]
-                print('Msgs: {}'.format(msgs))
-                publish.single(payload=msgs, hostname=rabitmq_ip)
-                publish.multiple(msgs, rabitmq_ip, auth=user_auth)
+                msg = "go;x:{};width:{}".format(-10, 0)
+                print('Msgs: {}'.format(msg))
+                publish.single(payload=msg, hostname=rabitmq_ip, topic="demo.key", auth=user_auth)
 
             cv.imshow('frame', frame)
             if cv.waitKey(1) & 0xFF == ord('q'):

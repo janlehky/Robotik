@@ -3,6 +3,7 @@ import multiprocessing
 import RPi.GPIO as GPIO     #Import GPIO library
 from Distance import Distance
 import paho.mqtt.client as mqtt
+import time
 
 
 GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
@@ -10,13 +11,14 @@ GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
 # define values for communication between processes
 x_offset = multiprocessing.Value('d', 0.0)
 y_offset = multiprocessing.Value('d', 0.0)
+width = multiprocessing.Value('d', 0.0)
 run_cmd = multiprocessing.Value('d', 0.0)
 front_distance_sensor = multiprocessing.Value('d', 10.0)
 
-max_speed = 100     # Maximum speed of vehicle
+max_speed = 4000     # Maximum speed of vehicle
 
 
-def drive_vehicle(x_offset, y_offset, run_cmd, front_distance_sensor):
+def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor):
     """Logic for controlling car movement"""
     # Initialise the PCA9685 using the default address (0x40).
     pwm = Adafruit_PCA9685.PCA9685()
@@ -24,50 +26,75 @@ def drive_vehicle(x_offset, y_offset, run_cmd, front_distance_sensor):
     # set number of pins for direction of drives
     left_fwd_pin_1 = 4
     left_fwd_pin_2 = 17
+    left_bwd_pin_1 = 18
+    left_bwd_pin_2 = 23
 
     right_fwd_pin_1 = 22
     right_fwd_pin_2 = 27
+    right_bwd_pin_1 = 24
+    right_bwd_pin_2 = 25
 
-    GPIO.setup(left_fwd_pin_1, GPIO.OUT)  # left forward pin
-    GPIO.setup(left_fwd_pin_2, GPIO.OUT)  # left backward pin
+    GPIO.setup(left_fwd_pin_1, GPIO.OUT)  # left forward 1 pin
+    GPIO.setup(left_fwd_pin_2, GPIO.OUT)  # left forward 2 pin
+    GPIO.setup(left_bwd_pin_1, GPIO.OUT)  # left backward 1 pin
+    GPIO.setup(left_bwd_pin_2, GPIO.OUT)  # left backward 2 pin
 
-    GPIO.setup(right_fwd_pin_1, GPIO.OUT)  # right forward pin
-    GPIO.setup(right_fwd_pin_2, GPIO.OUT)  # right backward pin
+    GPIO.setup(right_fwd_pin_1, GPIO.OUT)  # right forward 1 pin
+    GPIO.setup(right_fwd_pin_2, GPIO.OUT)  # right forward 2 pin
+    GPIO.setup(right_bwd_pin_1, GPIO.OUT)  # right backward 1 pin
+    GPIO.setup(right_bwd_pin_2, GPIO.OUT)  # right backward 2 pin
 
-    GPIO.output(left_fwd_pin_1, True)
-    GPIO.output(left_fwd_pin_2, True)
+    left_fwd = True
+    left_bwd = False
 
-    GPIO.output(right_fwd_pin_1, True)
-    GPIO.output(right_fwd_pin_2, True)
+    right_fwd = True
+    right_bwd = False
 
     while True:
-        # print('X_offset: {}'.format(x_offset.value))
-        if front_distance_sensor.value < 5:
+        if front_distance_sensor.value < 5 or width.value > 200:
             left_speed = 0
             right_speed = 0
+            left_fwd = left_bwd = right_fwd = right_bwd = False
         else:
+            right_fwd = True
             if x_offset.value == -10:
-                left_speed = 0
-                right_speed = 0.3 * max_speed
+                left_speed = 0.6 * max_speed
+                left_fwd = False
+                left_bwd = True
+                right_speed = 0.6 * max_speed
             elif -5 < x_offset.value < 0:
                 left_speed = abs(x_offset.value) * max_speed
                 right_speed = max_speed
+                left_fwd = True
+                left_bwd = False
             elif x_offset.value > 0:
                 left_speed = max_speed
                 right_speed = x_offset.value * max_speed
+                left_fwd = True
+                left_bwd = False
             else:
                 left_speed = max_speed
                 right_speed = max_speed
+                left_fwd = True
+                left_bwd = False
         
         print('Speeds: Left {} Right {}'.format(left_speed, right_speed))
 
         # Right drives
         pwm.set_pwm(0, 0, int(right_speed*run_cmd.value))
         pwm.set_pwm(1, 0, int(right_speed*run_cmd.value))
+        GPIO.output(left_fwd_pin_1, left_fwd)
+        GPIO.output(left_fwd_pin_2, left_fwd)
+        GPIO.output(left_bwd_pin_1, left_bwd)
+        GPIO.output(left_bwd_pin_2, left_bwd)
 
         # Left drives
         pwm.set_pwm(4, 0, int(left_speed*run_cmd.value))
         pwm.set_pwm(5, 0, int(left_speed*run_cmd.value))
+        GPIO.output(right_fwd_pin_1, right_fwd)
+        GPIO.output(right_fwd_pin_2, right_fwd)
+        GPIO.output(right_bwd_pin_1, right_bwd)
+        GPIO.output(right_bwd_pin_2, right_bwd)
 
 
 # The callback for when the client receives a CONNACK response from the server.
@@ -84,14 +111,18 @@ def on_message(client, userdata, msg):
     text = str(msg.payload)
     data = text.split(";")
     if 'go' in data[0]:
-        parts = data[1].split(':')
         run_cmd.value = 1.0
-        if 'x' in parts[0]:
-            print('X offset: {}'.format(parts[1]))
-            x_offset.value = float(parts[1][:-1])
-        elif 'y' in parts[0]:
-            print('Y offset: {}'.format(parts[1]))
-            y_offset.value = float(parts[1][:-1])
+        for item in data[1:]:
+            parts = item.split(':')
+            if 'x' in parts[0]:
+                print('X offset: {}'.format(parts[1]))
+                x_offset.value = float(parts[1])
+            elif 'width' in parts[0]:
+                print('Width: {}'.format(parts[1]))
+                width.value = float(parts[1])
+            elif 'y' in parts[0]:
+                print('Y offset: {}'.format(parts[1]))
+                y_offset.value = float(parts[1])
     elif 'stop' in data[0]:
         run_cmd.value = 0.0
 
@@ -105,7 +136,7 @@ client.connect(rabitmq_ip, 1883, 60)
 
 # Create distance measurement process and start it
 drive_process = multiprocessing.Process(target=drive_vehicle,
-                                        args=(x_offset, y_offset, run_cmd, front_distance_sensor, ))
+                                        args=(x_offset, y_offset, run_cmd, width, front_distance_sensor, ))
 drive_process.start()
 
 # Create measurement object for front sensor
@@ -117,8 +148,13 @@ drive_process.start()
 try:
     client.loop_forever()
 finally:
+    # disconnect from rabitmq
+    client.disconnect()
+    # set stop command
+    run_cmd.value = 0.0
+    time.sleep(2)
     # Terminate running processes and cleanup claimed GPIO's
     drive_process.terminate()
-    front_measurement_process.terminate()
-    front_measurement.cleanup()
+    # front_measurement_process.terminate()
+    # front_measurement.cleanup()
     GPIO.cleanup()
