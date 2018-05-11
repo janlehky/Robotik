@@ -50,6 +50,8 @@ def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor_1, f
     right_fwd = True
     right_bwd = False
 
+    last_left = False
+
     while True:
         try:
             # Take shortest distance measured by ultrasound
@@ -58,7 +60,7 @@ def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor_1, f
             else:
                 front_distance = front_distance_sensor_2.value
 
-            if front_distance < 5 or width.value > 500:
+            if front_distance < 5 or width.value > 450:
                 # if we are facing some obstacle or object we are looking for is close > stop
                 left_speed = 0
                 right_speed = 0
@@ -66,23 +68,29 @@ def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor_1, f
             else:
                 right_fwd = True
                 if x_offset.value == -10:
-                    # no object is detected by camera
-                    left_speed = 0.6 * max_speed
-                    left_fwd = False
-                    left_bwd = True
-                    right_speed = 0.8 * max_speed
+                    if last_left:
+                        # no object is detected by camera
+                        left_speed = 0  # 0.6 * max_speed
+                        # left_fwd = False
+                        # left_bwd = True
+                        right_speed = 0.9 * max_speed
+                    else:
+                        left_speed = 0.9 * max_speed
+                        right_speed = 0
                 elif -5 < x_offset.value < 0:
                     # object is in left part of the screen
                     left_speed = pow(abs(x_offset.value), 2) * max_speed
                     right_speed = max_speed
                     left_fwd = True
                     left_bwd = False
+                    last_left = True
                 elif x_offset.value > 0:
                     # object is in right part of the screen
                     left_speed = max_speed
                     right_speed = pow(x_offset.value, 2) * max_speed
                     left_fwd = True
                     left_bwd = False
+                    last_left = False
                 else:
                     # object is in the middle
                     left_speed = max_speed
