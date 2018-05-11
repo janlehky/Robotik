@@ -3,7 +3,6 @@ import multiprocessing
 import RPi.GPIO as GPIO     #Import GPIO library
 from Distance import Distance
 import paho.mqtt.client as mqtt
-import time
 
 
 GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
@@ -13,12 +12,13 @@ x_offset = multiprocessing.Value('d', 0.0)
 y_offset = multiprocessing.Value('d', 0.0)
 width = multiprocessing.Value('d', 0.0)
 run_cmd = multiprocessing.Value('d', 0.0)
-front_distance_sensor = multiprocessing.Value('d', 10.0)
+front_distance_sensor_1 = multiprocessing.Value('d', 10.0)
+front_distance_sensor_2 = multiprocessing.Value('d', 10.0)
 
 max_speed = 4000     # Maximum speed of vehicle
 
 
-def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor):
+def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor_1, front_distance_sensor_2):
     """Logic for controlling car movement"""
     # Initialise the PCA9685 using the default address (0x40).
     pwm = Adafruit_PCA9685.PCA9685()
@@ -52,28 +52,39 @@ def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor):
 
     while True:
         try:
-            if front_distance_sensor.value < 5 or width.value > 500:
+            # Take shortest distance measured by ultrasound
+            if front_distance_sensor_1.value < front_distance_sensor_2.value:
+                front_distance = front_distance_sensor_1.value
+            else:
+                front_distance = front_distance_sensor_2.value
+
+            if front_distance < 5 or width.value > 500:
+                # if we are facing some obstacle or object we are looking for is close > stop
                 left_speed = 0
                 right_speed = 0
                 left_fwd = left_bwd = right_fwd = right_bwd = False
             else:
                 right_fwd = True
                 if x_offset.value == -10:
+                    # no object is detected by camera
                     left_speed = 0.6 * max_speed
                     left_fwd = False
                     left_bwd = True
                     right_speed = 0.8 * max_speed
                 elif -5 < x_offset.value < 0:
-                    left_speed = abs(x_offset.value) * max_speed
+                    # object is in left part of the screen
+                    left_speed = pow(abs(x_offset.value), 2) * max_speed
                     right_speed = max_speed
                     left_fwd = True
                     left_bwd = False
                 elif x_offset.value > 0:
+                    # object is in right part of the screen
                     left_speed = max_speed
-                    right_speed = x_offset.value * max_speed
+                    right_speed = pow(x_offset.value, 2) * max_speed
                     left_fwd = True
                     left_bwd = False
                 else:
+                    # object is in the middle
                     left_speed = max_speed
                     right_speed = max_speed
                     left_fwd = True
@@ -97,6 +108,7 @@ def drive_vehicle(x_offset, y_offset, run_cmd, width, front_distance_sensor):
             GPIO.output(right_bwd_pin_1, right_bwd)
             GPIO.output(right_bwd_pin_2, right_bwd)
         except KeyboardInterrupt:
+            # Stop robot after keyboard interrupt
             GPIO.output(left_fwd_pin_1, False)
             GPIO.output(left_fwd_pin_2, False)
             GPIO.output(left_bwd_pin_1, False)
@@ -145,18 +157,25 @@ rabitmq_ip = '192.168.2.88'
 client.username_pw_set('client', '1234')
 client.connect(rabitmq_ip, 1883, 60)
 
+# Create distance measurement process and start it
+drive_process = multiprocessing.Process(target=drive_vehicle,
+                                        args=(x_offset, y_offset, run_cmd, width, front_distance_sensor_1,
+                                              front_distance_sensor_2, ))
+drive_process.start()
+
+# Create measurement object for front sensor
+front_measurement_1 = Distance(20, 21)
+front_measurement_2 = Distance(26, 19)
+# Create front measurement process and start it
+front_measurement_process_1 = multiprocessing.Process(target=front_measurement_1.measure,
+                                                      args=(front_distance_sensor_1, ))
+front_measurement_process_1.start()
+
+front_measurement_process_2 = multiprocessing.Process(target=front_measurement_2.measure,
+                                                      args=(front_distance_sensor_2, ))
+front_measurement_process_2.start()
+
 try:
-    # Create distance measurement process and start it
-    drive_process = multiprocessing.Process(target=drive_vehicle,
-                                        args=(x_offset, y_offset, run_cmd, width, front_distance_sensor, ))
-    drive_process.start()
-
-    # Create measurement object for front sensor
-    #front_measurement = Distance(20, 21)
-    # Create front measurement process and start it
-    #front_measurement_process = multiprocessing.Process(target=front_measurement.measure, args=(front_distance_sensor, ))
-    #front_measurement_process.start()
-
     client.loop_forever()
 finally:
     # disconnect from rabitmq
@@ -164,5 +183,7 @@ finally:
     client.disconnect()
     # Terminate running processes and cleanup claimed GPIO's
     drive_process.terminate()
-    # front_measurement_process.terminate()
-    # front_measurement.cleanup()
+    front_measurement_process_1.terminate()
+    front_measurement_1.cleanup()
+    front_measurement_process_2.terminate()
+    front_measurement_2.cleanup()
