@@ -45,6 +45,8 @@ def average_slope_intercept(lines):
     left_weights = []  # (length,)
     right_lines = []  # (slope, intercept)
     right_weights = []  # (length,)
+    left_y = 0  # bottom point of left lines
+    right_y = 0  # bottom point of right lines
 
     for line in lines:
         for x1, y1, x2, y2 in line:
@@ -56,15 +58,23 @@ def average_slope_intercept(lines):
             if slope < 0:  # y is reversed in image
                 left_lines.append((slope, intercept))
                 left_weights.append((length))
+                if y1 > y2 and y1 > left_y:
+                    left_y = y1
+                elif y1 < y2 and y2 > left_y:
+                    left_y = y2
             else:
                 right_lines.append((slope, intercept))
                 right_weights.append((length))
+                if y1 > y2 and y1 > right_y:
+                    right_y = y1
+                elif y1 < y2 and y2 > right_y:
+                    right_y = y2
 
     # add more weight to longer lines
     left_lane = np.dot(left_weights, left_lines) / np.sum(left_weights) if len(left_weights) > 0 else None
     right_lane = np.dot(right_weights, right_lines) / np.sum(right_weights) if len(right_weights) > 0 else None
 
-    return left_lane, right_lane  # (slope, intercept), (slope, intercept)
+    return left_lane, right_lane, left_y, right_y  # (slope, intercept), (slope, intercept)
 
 
 def make_line_points(y1, y2, line, line_prev):
@@ -106,67 +116,63 @@ right_line_prev = np.array([0, 0])
 
 # capture frames from the camera
 for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-	# grab the raw NumPy array representing the image, then initialize the timestamp
-	# and occupied/unoccupied text
-	frame = img.array
-	
-	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # grab the raw NumPy array representing the image, then initialize the timestamp
+    # and occupied/unoccupied text
+    frame = img.array
 
-	kernel_size = 15
-	blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-	edges = cv2.Canny(blurred, 45, 100) # (blurred, 50, 150)
+    kernel_size = 15
+    blurred = cv2.GaussianBlur(gray, (kernel_size, kernel_size), 0)
 
-	area = select_region(edges)
-	#area = edges
+    edges = cv2.Canny(blurred, 45, 100) # (blurred, 50, 150)
 
-	lines = cv2.HoughLinesP(area, rho=1, theta=np.pi/180, threshold=30, minLineLength=20, maxLineGap=200)
-	# lines = cv2.HoughLinesP(area, rho=1, theta=np.pi / 180, threshold=30, minLineLength=20, maxLineGap=200)
-	# print(lines)
-	if lines is not None:
-		left_lane, right_lane = average_slope_intercept(lines)
+    area = select_region(edges)
 
-		if left_lane is not None:
-			np_left_lane = np.array(left_lane)
-			left_line_prev = (np_left_lane + left_line_prev)/2
+    lines = cv2.HoughLinesP(area, rho=1, theta=np.pi/180, threshold=30, minLineLength=20, maxLineGap=200)
+    # lines = cv2.HoughLinesP(area, rho=1, theta=np.pi / 180, threshold=30, minLineLength=20, maxLineGap=200)
 
-		left_lane = left_line_prev.tolist()
+    if lines is not None:
+        left_lane, right_lane, left_y1, right_y1 = average_slope_intercept(lines)
 
-		if right_lane is not None:
-			np_right_lane = np.array(right_lane)
-			right_line_prev = (np_right_lane + right_line_prev) / 2
+        if left_lane is not None:
+            np_left_lane = np.array(left_lane)
+            left_line_prev = (np_left_lane + left_line_prev)/2
 
-		right_lane = right_line_prev.tolist()
+        left_lane = left_line_prev.tolist()
 
-		y1 = gray.shape[0]  # bottom of the image
-		y2 = y1 * 0.4 # slightly lower than the middle
+        if right_lane is not None:
+            np_right_lane = np.array(right_lane)
+            right_line_prev = (np_right_lane + right_line_prev) / 2
 
-		left_line = make_line_points(y1, y2, left_lane, left_line_prev)
-		right_line = make_line_points(y1, y2, right_lane, right_line_prev)
+        right_lane = right_line_prev.tolist()
 
-		# print(left_line)
-		# print(right_line)
+        # y1 = gray.shape[0]  # bottom of the image
+        y2 = gray.shape[0] * 0.4    # top point y coordinate for line
 
-		lines_final = [left_line, right_line]
+        left_line = make_line_points(left_y1, y2, left_lane, left_line_prev)
+        right_line = make_line_points(right_y1, y2, right_lane, right_line_prev)
 
-		try:
-			for line in lines:
-				#print(line[0])
-				x1, y1, x2, y2 = line[0]
-				#print("x:{}".format(x1))
-				X = (x1, y1)
-				Y= (x2, y2)
-				#X, Y = line
-				print("x:{} y:{}".format(X, Y))
-				cv2.line(frame, X, Y, (0, 255, 0), 2)
-		except:
-			pass
-	
-	# show the frame
-	cv2.imshow("Frame", frame)
+        lines_final = [left_line, right_line]
 
-	if cv2.waitKey(1) & 0xFF == ord('q'):
-		break
-	
-	# clear the stream in preparation for the next frame
-	rawCapture.truncate(0)
+        try:
+            for line in lines_final:
+                #print(line[0])
+                # x1, y1, x2, y2 = line[0]
+                # #print("x:{}".format(x1))
+                # X = (x1, y1)
+                # Y = (x2, y2)
+                X, Y = line
+                print("x:{} y:{}".format(X, Y))
+                cv2.line(frame, X, Y, (0, 255, 0), 2)
+        except:
+            pass
+
+    # show the frame
+    cv2.imshow("Frame", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+    # clear the stream in preparation for the next frame
+    rawCapture.truncate(0)
