@@ -4,6 +4,19 @@ from picamera import PiCamera
 import time
 import cv2
 import numpy as np
+import Adafruit_PCA9685
+import multiprocessing
+import RPi.GPIO as GPIO
+from Distance import Distance
+
+GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
+
+# define values for communication between processes
+error = multiprocessing.Value('d', 0.0)
+front_distance_sensor_1 = multiprocessing.Value('d', 10.0)
+front_distance_sensor_2 = multiprocessing.Value('d', 10.0)
+
+max_speed = 4000     # Maximum speed of vehicle
 
 
 def filter_region(image, verticles):
@@ -31,9 +44,9 @@ def select_region(image):
 
     rows, cols = image.shape[:2]
     bottom_left = [cols*0.0, rows*0.8]  # [cols*0.1, rows*0.95]
-    top_left = [cols*0.1, rows*0.2]    # [cols*0.3, rows*0.6]
+    top_left = [cols*0.1, rows*0.4]    # [cols*0.3, rows*0.6]
     bottom_right = [cols*0.99, rows*0.8]  # [cols*0.9, rows*0.95]
-    top_right = [cols*0.9, rows*0.2]   # [cols*0.6, rows*0.6]
+    top_right = [cols*0.9, rows*0.4]   # [cols*0.6, rows*0.6]
 
     verticles = np.array([[bottom_left, top_left, top_right, bottom_right]], dtype=np.int32)
 
@@ -102,6 +115,52 @@ def make_line_points(y1, y2, line, line_prev):
 
     return ((x1, y1), (x2, y2))
     
+def get_stearing_error(y2, left_line, right_line, mid):
+	"""
+	Calculate middle point for car and error to let and right line
+	"""
+	ALOT = 1e6
+	
+	
+	slope, intercept = left_line
+	if slope != 0:
+		x_l = max(min((y2 - intercept) / slope, ALOT), -ALOT)
+	else:
+		x_l = 0
+	
+	slope, intercept = right_line
+	if slope != 0:
+		x_r = max(min((y2 - intercept) / slope, ALOT), -ALOT)
+	else:
+		x_r = 2*mid - 1
+	
+	left_err = mid - x_l
+	right_err = x_r - mid
+	print("l_err: {} r_err: {}".format(left_err, right_err))
+	
+	return ((left_err - right_err)/(left_err + right_err))
+	
+def calculate_speeds(error, front_distance_1, front_distance_2, max_speed):
+	"""
+	Drive control logic
+	"""
+	error_clamped = max(min(error, 1.0), -1.0)	
+	
+	if front_distance_1 > 10 and front_distance_2 > 10:
+		if error_clamped > 0:
+			left_speed = (1 - error_clamped) * max_speed
+			right_speed = max_speed
+		elif error_clamped < 0:
+			left_speed = max_speed
+			right_speed = (1 + error_clamped) * max_speed
+		else:
+			left_speed = right_speed = max_speed
+	else:
+		left_speed = 0
+		right_speed = 0
+		
+	return left_speed, right_speed
+    
 # initialize the camera and grab a reference to the raw camera capture
 camera = PiCamera()
 camera.resolution = (640, 480)
@@ -111,8 +170,53 @@ rawCapture = PiRGBArray(camera, size=(640, 480))
 # allow the camera to warmup
 time.sleep(0.1)
 
+enable_drives = True
+
+if enable_drives:
+	# Initialise the PCA9685 using the default address (0x40).
+	pwm = Adafruit_PCA9685.PCA9685()
+
+	# set number of pins for direction of drives
+	left_fwd_pin_1 = 4
+	left_fwd_pin_2 = 17
+	left_bwd_pin_1 = 18
+	left_bwd_pin_2 = 23
+
+	right_fwd_pin_1 = 22
+	right_fwd_pin_2 = 27
+	right_bwd_pin_1 = 24
+	right_bwd_pin_2 = 25
+
+	GPIO.setup(left_fwd_pin_1, GPIO.OUT)  # left forward 1 pin
+	GPIO.setup(left_fwd_pin_2, GPIO.OUT)  # left forward 2 pin
+	GPIO.setup(left_bwd_pin_1, GPIO.OUT)  # left backward 1 pin
+	GPIO.setup(left_bwd_pin_2, GPIO.OUT)  # left backward 2 pin
+
+	GPIO.setup(right_fwd_pin_1, GPIO.OUT)  # right forward 1 pin
+	GPIO.setup(right_fwd_pin_2, GPIO.OUT)  # right forward 2 pin
+	GPIO.setup(right_bwd_pin_1, GPIO.OUT)  # right backward 1 pin
+	GPIO.setup(right_bwd_pin_2, GPIO.OUT)  # right backward 2 pin
+	
+	left_fwd = True
+	left_bwd = False
+
+	right_fwd = True
+	right_bwd = False
+
 left_line_prev = np.array([0, 0])
 right_line_prev = np.array([0, 0])
+
+# Create measurement object for front sensor
+front_measurement_1 = Distance(20, 21)
+front_measurement_2 = Distance(26, 19)
+# Create front measurement process and start it
+front_measurement_process_1 = multiprocessing.Process(target=front_measurement_1.measure,
+                                                      args=(front_distance_sensor_1, ))
+front_measurement_process_1.start()
+
+front_measurement_process_2 = multiprocessing.Process(target=front_measurement_2.measure,
+                                                      args=(front_distance_sensor_2, ))
+front_measurement_process_2.start()
 
 # capture frames from the camera
 for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -130,7 +234,6 @@ for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=Tr
     area = select_region(edges)
 
     lines = cv2.HoughLinesP(area, rho=1, theta=np.pi/180, threshold=30, minLineLength=20, maxLineGap=200)
-    # lines = cv2.HoughLinesP(area, rho=1, theta=np.pi / 180, threshold=30, minLineLength=20, maxLineGap=200)
 
     if lines is not None:
         left_lane, right_lane, left_y1, right_y1 = average_slope_intercept(lines)
@@ -149,6 +252,28 @@ for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=Tr
 
         # y1 = gray.shape[0]  # bottom of the image
         y2 = gray.shape[0] * 0.4    # top point y coordinate for line
+        
+        err = get_stearing_error(y2, left_lane, right_lane, gray.shape[1]/2)
+        print("Error: {} Front 1: {}".format(err, front_distance_sensor_1.value))
+        
+        if enable_drives:
+            left_speed, right_speed = calculate_speeds(err, front_distance_sensor_1.value, front_distance_sensor_2.value, max_speed)
+            print("Left: {} Right: {}".format(left_speed, right_speed))
+            # Right drives
+            pwm.set_pwm(0, 0, int(right_speed))
+            pwm.set_pwm(1, 0, int(right_speed))
+            GPIO.output(right_fwd_pin_1, right_fwd)
+            GPIO.output(right_fwd_pin_2, right_fwd)
+            GPIO.output(right_bwd_pin_1, right_bwd)
+            GPIO.output(right_bwd_pin_2, right_bwd)
+           
+            # Left drives
+            pwm.set_pwm(4, 0, int(left_speed))
+            pwm.set_pwm(5, 0, int(left_speed))
+            GPIO.output(left_fwd_pin_1, left_fwd)
+            GPIO.output(left_fwd_pin_2, left_fwd)
+            GPIO.output(left_bwd_pin_1, left_bwd)
+            GPIO.output(left_bwd_pin_2, left_bwd)
 
         left_line = make_line_points(left_y1, y2, left_lane, left_line_prev)
         right_line = make_line_points(right_y1, y2, right_lane, right_line_prev)
@@ -158,20 +283,24 @@ for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=Tr
         try:
             for line in lines_final:
                 #print(line[0])
-                # x1, y1, x2, y2 = line[0]
+                #x1, y1, x2, y2 = line[0]
                 # #print("x:{}".format(x1))
-                # X = (x1, y1)
-                # Y = (x2, y2)
+                #X = (x1, y1)
+                #Y = (x2, y2)
                 X, Y = line
-                print("x:{} y:{}".format(X, Y))
+                #print("x:{} y:{}".format(X, Y))
                 cv2.line(frame, X, Y, (0, 255, 0), 2)
         except:
             pass
-
+	
     # show the frame
     cv2.imshow("Frame", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
+        front_measurement_process_1.terminate()
+        front_measurement_1.cleanup()
+        front_measurement_process_2.terminate()
+        front_measurement_2.cleanup()
         break
 
     # clear the stream in preparation for the next frame
