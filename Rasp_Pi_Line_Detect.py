@@ -8,6 +8,7 @@ import Adafruit_PCA9685
 import multiprocessing
 import RPi.GPIO as GPIO
 from Distance import Distance
+import math
 
 GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
 
@@ -16,7 +17,7 @@ error = multiprocessing.Value('d', 0.0)
 front_distance_sensor_1 = multiprocessing.Value('d', 10.0)
 front_distance_sensor_2 = multiprocessing.Value('d', 10.0)
 
-max_speed = 4000     # Maximum speed of vehicle
+max_speed = 3000     # Maximum speed of vehicle
 
 
 def filter_region(image, verticles):
@@ -107,7 +108,10 @@ def make_line_points(y1, y2, line, line_prev):
 
     # make sure everything is integer as cv2.line requires it
     x1 = max(min((y1 - intercept) / slope, ALOT), -ALOT)  # limit values before we try to convert them to integer
-    x1 = int(x1)
+    if math.isnan(x1):
+        x1 = 0
+    else:
+        x1 = int(x1)
     x2 = max(min((y2 - intercept) / slope, ALOT), -ALOT)
     x2 = int(x2)
     y1 = int(y1)
@@ -281,13 +285,13 @@ for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=Tr
         lines_final = [left_line, right_line]
 
         try:
-            for line in lines_final:
+            for line in lines:
                 #print(line[0])
-                #x1, y1, x2, y2 = line[0]
-                # #print("x:{}".format(x1))
-                #X = (x1, y1)
-                #Y = (x2, y2)
-                X, Y = line
+                x1, y1, x2, y2 = line[0]
+                #print("x:{}".format(x1))
+                X = (x1, y1)
+                Y = (x2, y2)
+                #X, Y = line
                 #print("x:{} y:{}".format(X, Y))
                 cv2.line(frame, X, Y, (0, 255, 0), 2)
         except:
