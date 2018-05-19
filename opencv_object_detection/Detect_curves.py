@@ -38,17 +38,27 @@ def select_region(image):
     return filter_region(image, verticles)
 
 
-def calculate_points(polynom_par, width):
-    x_points = [0, width*0.2, width*0.4, width*0.6, width*0.8, width]
+def calculate_points(polynom_par, width, height):
+    x_points = [0, width*0.1, width*0.2, width*0.4, width*0.5, width*0.6, width*0.80, width*0.9, width*0.95, width]
     points = []
     p = np.poly1d(polynom_par)
     print("Polynom: {}".format(polynom_par))
     for x_point in x_points:
         y = p(x_point)
-        X = [x_point, y]
-        points.append(tuple(np.int32(X)))
+
+        if y > height*0.5:
+            X = [x_point, y]
+            points.append(tuple(np.int32(X)))
 
     return points
+
+
+def calculate_curvature(poly_par, x):
+    """"Calculate curvature at point x"""
+
+    curvature = np.absolute(2*poly_par[0])/((1+(2*poly_par[0]*x+poly_par[1])**2)**1.5)
+
+    return curvature
 
 
 img = cv2.imread('../images/cam.jpg', 1)
@@ -127,8 +137,12 @@ for point in points:
 left_line = np.polyfit(left_x_points, left_y_points, 2)
 right_line = np.polyfit(right_x_points, right_y_points, 2)
 
-lp = calculate_points(left_line, small.shape[1])
-rp = calculate_points(right_line, small.shape[1])
+curvature_l = calculate_curvature(left_line, small.shape[0]*0.8)
+curvature_r = calculate_curvature(right_line, small.shape[0]*0.8)
+print("Curvature l: {} r: {}".format(curvature_l, curvature_r))
+
+lp = calculate_points(left_line, small.shape[1], small.shape[0])
+rp = calculate_points(right_line, small.shape[1], small.shape[0])
 
 lp = np.array(lp, dtype=np.int32)
 rp = np.array(rp, dtype=np.int32)
