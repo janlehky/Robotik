@@ -2,7 +2,7 @@ import tensorflow as tf
 import cv2 as cv
 
 # Read the graph.
-with tf.gfile.FastGFile('frozen_inference_graph.pb', 'rb') as f:
+with tf.gfile.FastGFile('shingle_graph.pb', 'rb') as f:
     graph_def = tf.GraphDef()
     graph_def.ParseFromString(f.read())
 
@@ -12,7 +12,7 @@ with tf.Session() as sess:
     tf.import_graph_def(graph_def, name='')
 
     # Read and preprocess an image.
-    img = cv.imread('example2.jpg')
+    img = cv.imread('p5.jpg')
     rows = img.shape[0]
     cols = img.shape[1]
     inp = cv.resize(img, (300, 300))
@@ -29,6 +29,7 @@ with tf.Session() as sess:
     num_detections = int(out[0][0])
     for i in range(num_detections):
         classId = int(out[3][0][i])
+        print(classId)
         score = float(out[1][0][i])
         bbox = [float(v) for v in out[2][0][i]]
         if score > 0.3:

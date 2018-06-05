@@ -286,17 +286,17 @@ for img in camera.capture_continuous(rawCapture, format="bgr", use_video_port=Tr
 
         try:
             for line in lines:
-                #print(line[0])
+                # print(line[0])
                 x1, y1, x2, y2 = line[0]
-                #print("x:{}".format(x1))
+                # print("x:{}".format(x1))
                 X = (x1, y1)
                 Y = (x2, y2)
-                #X, Y = line
-                #print("x:{} y:{}".format(X, Y))
+                # X, Y = line
+                # print("x:{} y:{}".format(X, Y))
                 cv2.line(frame, X, Y, (0, 255, 0), 2)
         except:
             pass
-	
+
     # show the frame
     cv2.imshow("Frame", frame)
 
