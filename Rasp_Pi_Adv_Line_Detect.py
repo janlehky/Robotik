@@ -281,10 +281,10 @@ def get_lines(img):
     OFFSET = 300
 
     PRES_SRC_PNTS = np.float32([
-        (IMG_SIZE[0] * 0.02, IMG_SIZE[1] * 0.4),  # Top-left corner
+        (IMG_SIZE[0] * 0.02, IMG_SIZE[1] * 0.3),  # Top-left corner
         (1, IMG_SIZE[1]),  # Bottom-left corner
         (IMG_SIZE[0], IMG_SIZE[1]),  # Bottom-right corner
-        (IMG_SIZE[0] * 0.97, IMG_SIZE[1] * 0.4)  # Top-right corner
+        (IMG_SIZE[0] * 0.97, IMG_SIZE[1] * 0.3)  # Top-right corner
     ])
 
     PRES_DST_PNTS = np.float32([
@@ -371,9 +371,9 @@ def calc_curvature(ploty, leftx, rightx, lefty, righty, unit="m"):
 
 # initialize the camera and grab a reference to the raw camera capture
 camera = PiCamera()
-camera.resolution = (640, 480)
+camera.resolution = (1600, 1200)
 camera.framerate = 32
-rawCapture = PiRGBArray(camera, size=(640, 480))
+rawCapture = PiRGBArray(camera, size=(1600, 1200))
 
 # allow the camera to warmup
 time.sleep(0.1)
