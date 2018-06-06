@@ -1,6 +1,8 @@
 import tensorflow as tf
 import cv2 as cv
 import paho.mqtt.publish as publish
+from Advanced_Line_Detect import find_lines
+import matplotlib.pyplot as plt
 
 # Create MQTT client for communication with car
 rabitmq_ip = '192.168.2.88'     # ip address of mqtt server
@@ -23,6 +25,9 @@ with tf.Session() as sess:
         ret, frame = cap.read()
 
         if ret:
+            # get lines from picture
+            img_result, left_curvem, right_curvem = find_lines(frame)
+
             # Read and preprocess an image.
             rows = frame.shape[0]
             cols = frame.shape[1]
@@ -81,11 +86,17 @@ with tf.Session() as sess:
                 print('Msgs: {}'.format(msg))
                 publish.single(payload=msg, hostname=rabitmq_ip, topic="demo.key", auth=user_auth)
 
-            cv.imshow('frame', frame)
+            f, axarr = plt.subplots(1, 2)
+            f.set_size_inches(20, 8)
+            axarr[0].imshow(frame, cmap='gray')
+            axarr[1].imshow(img_result)
+            plt.show()
+            # cv.imshow('frame', frame)
+            # cv.imshow('frame', img_result)
             if cv.waitKey(1) & 0xFF == ord('q'):
                 break
 
-# When everything done, release the capture
+# When everything done, release the captureq
 cap.release()
 cv.destroyAllWindows()
 
