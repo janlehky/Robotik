@@ -1,7 +1,6 @@
 from Distance import Distance
 import multiprocessing
 import time
-import Ad
 
 d = Distance(20, 21)
 

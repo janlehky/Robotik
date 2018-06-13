@@ -7,9 +7,9 @@ import numpy as np
 import Adafruit_PCA9685
 import multiprocessing
 import RPi.GPIO as GPIO
-from Distance import Distance
+from control.Distance import Distance
 import math
-from Advanced_Line_Detect import find_lines
+from opencv_code.Advanced_Line_Detect import find_lines
 
 GPIO.setmode(GPIO.BCM)  # Set GPIO pin numbering
 

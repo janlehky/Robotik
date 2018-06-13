@@ -1,7 +1,7 @@
 import Adafruit_PCA9685
 import multiprocessing
 import RPi.GPIO as GPIO     #Import GPIO library
-from Distance import Distance
+from control.Distance import Distance
 import paho.mqtt.client as mqtt
 
 

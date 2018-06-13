@@ -3,7 +3,7 @@
 import socket
 import sys
 import threading
-from robot import Robot
+from control.robot import Robot
 import RPi.GPIO as GPIO                    #Import GPIO library
 import time                                #Import time library
 GPIO.setmode(GPIO.BCM)                     #Set GPIO pin numbering 
