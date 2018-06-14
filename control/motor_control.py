@@ -20,9 +20,16 @@ class MotorControl:
         self.right_bwd_pin_1 = 24
         self.right_bwd_pin_2 = 25
 
+        # set base speed values
         self.speed = 0
+        self.right_speed = 0
+        self.left_speed = 0
+        self.max_speed = 4000
+
+        # set base steering angle
         self.steering = 0
 
+        # set initial directions for every drive
         self.left_fwd = True
         self.left_bwd = False
 
@@ -51,10 +58,58 @@ class MotorControl:
         """Release GPIO when we don't need it"""
         GPIO.cleanup()
 
-    def set_speed(self):
-        """Sets actual value of speed"""
-        pass
+    def set_speed(self, speed_in):
+        """Sets actual value of speed and recalculates speeds (calling calculate speeds method)"""
+        if speed_in < 0:
+            self.left_fwd = False
+            self.left_bwd = True
+            self.right_fwd = False
+            self.right_bwd = True
 
-    def set_steering(self):
-        """Sets actual value of steering"""
-        pass
+            self.speed = - speed_in
+        else:
+            self.left_fwd = True
+            self.left_bwd = False
+            self.right_fwd = True
+            self.right_bwd = False
+
+            self.speed = speed_in
+
+        self.calculate_speeds()
+
+    def set_steering(self, steering_angle):
+        """Sets actual value of steering and recalculates speeds (calling calculate speeds method)"""
+        self.steering = steering_angle
+
+        self.calculate_speeds()
+
+    def calculate_speeds(self):
+        """This method recalculates left and right speed based on actually set speed and steering"""
+        steer_factor = self.steering / 100
+        if steer_factor < 0:
+            self.left_speed = (1 + steer_factor) * self.max_speed * self.speed / 100
+            self.right_speed = self.max_speed * self.speed / 100
+        elif steer_factor == 0:
+            self.left_speed = self.max_speed * self.speed / 100
+            self.right_speed = self.max_speed * self.speed / 100
+        else:
+            self.left_speed = self.max_speed * self.speed / 100
+            self.right_speed = (1 + steer_factor) * self.max_speed * self.speed / 100
+
+    def refresh_controls(self):
+        """Refresh actual commands to every channel based on set speed and steering"""
+        # Right drives
+        self.pwm.set_pwm(0, 0, int(self.right_speed))
+        self.pwm.set_pwm(1, 0, int(self.right_speed))
+        GPIO.output(self.left_fwd_pin_1, self.left_fwd)
+        GPIO.output(self.left_fwd_pin_2, self.left_fwd)
+        GPIO.output(self.left_bwd_pin_1, self.left_bwd)
+        GPIO.output(self.left_bwd_pin_2, self.left_bwd)
+
+        # Left drives
+        self.pwm.set_pwm(4, 0, int(self.right_speed))
+        self.pwm.set_pwm(5, 0, int(self.right_speed))
+        GPIO.output(self.right_fwd_pin_1, self.right_fwd)
+        GPIO.output(self.right_fwd_pin_2, self.right_fwd)
+        GPIO.output(self.right_bwd_pin_1, self.right_bwd)
+        GPIO.output(self.right_bwd_pin_2, self.right_bwd)
