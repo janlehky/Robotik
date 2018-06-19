@@ -1,48 +1,10 @@
 # Robotik
-Raspberry Pi Robot
+Raspberry Pi Powered Robot
 
-**Pololu help file:**
+Main purpose of this project is education for HW control and object detection.
 
-https://www.pololu.com/docs/0J40
+Installation instruction can be found [here](docs/instalation.md)
 
-**OpenCV:**
+Main vehicle control can be found [here](control)
 
-pip install opencv-contrib-python
-
-pip install opencv-python
-
-**Idea for line finding**
-https://github.com/naokishibuya/car-finding-lane-lines
-
-**Image downloading tool**
-https://github.com/hardikvasa/google-images-download
-googleimagesdownload --keywords "tennis ball in grass" --limit 300 --size medium --chromedriver "D:\Projects\Robot\pictures\chromedriver.exe"
-
-**Labeling tool**
-https://github.com/tzutalin/labelimg
-
-**Generate tf record**
-python3 generate_record.py --csv_input=data/train_labels.csv --output_path=data/train.record
-
-**Install uv4l on Raspberry**
-https://www.linux-projects.org/uv4l/installation/
-
-**Prebuilt tensorflow**
-https://github.com/lhelontra/tensorflow-on-arm/releases
-
-**Start video stream from Raspberry Pi**
-uv4l --driver raspicam --auto-video_nr --encoding mjpeg –-framerate 15 --width 1920 --height 1080 --enable-server on
-
-**On Client**
-cap = cv2.VideoCapture('http://192.168.2.200:8080/stream/video.mjpeg')
-
-**PCA9685 install**
-sudo pip install adafruit-pca9685
-
-**MQTT**
-
-Install Erlang and RabitMQ based on information at http://www.rabbitmq.com/download.html
-
-Enable RabitMQ admin interface plugin
-
-Enable RabitMQ mqtt plugin
+Not yet tested version of web server with stearing and speed control can be found [here](web_control)
