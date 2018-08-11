@@ -1,2 +1,9 @@
 .idea/
-.Notebooks/.ipynb_checkpoints
+.ipynb_checkpoints
+__pycache__
+models-master.zip
+models-master
+object_detection_train/ssd_mobilenet_v2_coco_2018_03_29
+object_detection_train/images
+video/Driving - 800.mp4
+models
