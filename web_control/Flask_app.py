@@ -3,8 +3,14 @@ from flask import render_template
 from flask import request
 import os
 import sys
+import inspect
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+# Add path to parent directory to have access to all modules
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
 
 import control.motor_control as mc
 
