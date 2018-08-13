@@ -52,6 +52,6 @@ def speed_slider():
 
 if __name__ == "__main__":
     try:
-        app.run()
+        app.run(host='0.0.0.0', port=80, debug=True)
     finally:
         car.release_gpio()

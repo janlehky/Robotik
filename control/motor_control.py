@@ -6,6 +6,8 @@ class MotorControl:
     """Provide access to control function of car, controls speed, stearing"""
 
     def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+
         # Initialise the PCA9685 using the default address (0x40).
         self.pwm = Adafruit_PCA9685.PCA9685()
 
@@ -60,32 +62,33 @@ class MotorControl:
 
     def set_speed(self, speed_in):
         """Sets actual value of speed and recalculates speeds (calling calculate speeds method)"""
-        if speed_in < 0:
+        if int(speed_in) < 0:
             self.left_fwd = False
             self.left_bwd = True
             self.right_fwd = False
             self.right_bwd = True
 
-            self.speed = - speed_in
+            self.speed = - int(speed_in)
         else:
             self.left_fwd = True
             self.left_bwd = False
             self.right_fwd = True
             self.right_bwd = False
 
-            self.speed = speed_in
+            self.speed = int(speed_in)
 
         self.calculate_speeds()
 
     def set_steering(self, steering_angle):
         """Sets actual value of steering and recalculates speeds (calling calculate speeds method)"""
-        self.steering = steering_angle
+        self.steering = int(steering_angle)
 
         self.calculate_speeds()
 
     def calculate_speeds(self):
         """This method recalculates left and right speed based on actually set speed and steering"""
         steer_factor = self.steering / 100
+        print("Calculated factor: {}".format(steer_factor))
         if steer_factor < 0:
             self.left_speed = (1 + steer_factor) * self.max_speed * self.speed / 100
             self.right_speed = self.max_speed * self.speed / 100
@@ -94,7 +97,8 @@ class MotorControl:
             self.right_speed = self.max_speed * self.speed / 100
         else:
             self.left_speed = self.max_speed * self.speed / 100
-            self.right_speed = (1 + steer_factor) * self.max_speed * self.speed / 100
+            self.right_speed = (1 - steer_factor) * self.max_speed * self.speed / 100
+            print("left: {} right: {}".format(self.left_speed, self.right_speed))
 
     def refresh_controls(self):
         """Refresh actual commands to every channel based on set speed and steering"""
@@ -107,8 +111,8 @@ class MotorControl:
         GPIO.output(self.left_bwd_pin_2, self.left_bwd)
 
         # Left drives
-        self.pwm.set_pwm(4, 0, int(self.right_speed))
-        self.pwm.set_pwm(5, 0, int(self.right_speed))
+        self.pwm.set_pwm(4, 0, int(self.left_speed))
+        self.pwm.set_pwm(5, 0, int(self.left_speed))
         GPIO.output(self.right_fwd_pin_1, self.right_fwd)
         GPIO.output(self.right_fwd_pin_2, self.right_fwd)
         GPIO.output(self.right_bwd_pin_1, self.right_bwd)
