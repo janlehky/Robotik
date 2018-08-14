@@ -105,15 +105,16 @@ class MotorControl:
         # Right drives
         self.pwm.set_pwm(0, 0, int(self.right_speed))
         self.pwm.set_pwm(1, 0, int(self.right_speed))
-        GPIO.output(self.left_fwd_pin_1, self.left_fwd)
-        GPIO.output(self.left_fwd_pin_2, self.left_fwd)
-        GPIO.output(self.left_bwd_pin_1, self.left_bwd)
-        GPIO.output(self.left_bwd_pin_2, self.left_bwd)
-
-        # Left drives
-        self.pwm.set_pwm(4, 0, int(self.left_speed))
-        self.pwm.set_pwm(5, 0, int(self.left_speed))
         GPIO.output(self.right_fwd_pin_1, self.right_fwd)
         GPIO.output(self.right_fwd_pin_2, self.right_fwd)
         GPIO.output(self.right_bwd_pin_1, self.right_bwd)
         GPIO.output(self.right_bwd_pin_2, self.right_bwd)
+        
+        # Left drives
+        self.pwm.set_pwm(4, 0, int(self.left_speed))
+        self.pwm.set_pwm(5, 0, int(self.left_speed))
+        GPIO.output(self.left_fwd_pin_1, self.left_fwd)
+        GPIO.output(self.left_fwd_pin_2, self.left_fwd)
+        GPIO.output(self.left_bwd_pin_1, self.left_bwd)
+        GPIO.output(self.left_bwd_pin_2, self.left_bwd)
+        
